@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
+import sqlite3
+
 
 class Libro:
     def __init__(self, titulo, autor, BookID):
@@ -34,13 +36,50 @@ class Miembro:
         return f"Miembro: {self.nombre}, ID: {self.id_miembro}"
 
 class Biblioteca:
+    db_name = 'database.db'
     def __init__(self):
         self.catalogo = []
         self.miembros = []
 
+        self.create_table()
+        
+    def run_query(self, query, parametros=()):
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            resultado = cursor.execute(query, parametros)
+            conn.commit()
+        return resultado
+
+    
+    def create_table(self):
+        query = '''CREATE TABLE IF NOT EXISTS libros (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    libro TEXT NOT NULL,
+                    BookID TEXT UNIQUE NOT NULL
+                )'''
+        self.run_query(query)
+        
     def anadir_libro(self, libro):
         self.catalogo.append(libro)
-        return f"Libro '{libro.titulo}' agregado al catálogo."
+        query = 'INSERT INTO libros VALUES (NULL, ?, ?, ?)'
+        parametros = (libro.titulo, libro.autor, libro.BookID)
+        self.run_query(query, parametros)
+        
+    def get_libros(self):
+        query = 'SELECT nombre, libro, BookID FROM libros ORDER BY nombre DESC'
+        db_rows = self.run_query(query)  # Ejecuta la consulta
+        
+        # Extraer los datos y devolverlos como una lista de diccionarios
+        libros = []
+        for row in db_rows:
+            libros.append({
+                "nombre": row[0],
+                "libro": row[1],
+                "BookID": row[2]
+            })
+        
+        return libros
 
     def prestar_libro(self, BookID, id_miembro):
         miembro = next((m for m in self.miembros if m.id_miembro == id_miembro), None)
@@ -64,8 +103,6 @@ class Biblioteca:
                 return f"Estado del libro '{libro.titulo}' actualizado."
         return "Libro no encontrado."
     
-    def mostrar_catalogo(self):
-        return "\n".join(str(libro) for libro in self.catalogo) if self.catalogo else "No hay libros en el catálogo."
     
     def agregar_miembro(self, miembro):
         self.miembros.append(miembro)
@@ -104,6 +141,8 @@ def agregar_libro():
             ventana_agregar.destroy()  # Cierra la ventana después de agregar
         else:
             messagebox.showwarning("Error", "Todos los campos son obligatorios.")
+            
+        
 
     tk.Button(ventana_agregar, text="Agregar", command=anadir_libro).grid(row=3, column=0, columnspan=2, pady=10)
     
@@ -156,7 +195,9 @@ def abrir_devolucion():
 
 
 def mostrar_catalogo():
-    messagebox.showinfo("Catálogo", biblioteca.mostrar_catalogo())
+    
+
+    messagebox.showinfo("Catálogo", biblioteca.get_libros())
     
 def abrir_actualizar_libro():
     ventana_actualizar = tk.Toplevel(root)
