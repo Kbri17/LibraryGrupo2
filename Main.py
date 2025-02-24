@@ -2,10 +2,10 @@ import tkinter as tk
 from tkinter import messagebox
 
 class Libro:
-    def __init__(self, titulo, autor, isbn):
+    def __init__(self, titulo, autor, BookID):
         self.titulo = titulo
         self.autor = autor
-        self.isbn = isbn
+        self.BookID = BookID
         self.prestado_a = None
 
     def prestar(self, miembro):
@@ -23,7 +23,7 @@ class Libro:
 
     def __str__(self):
         estado = f"Prestado a {self.prestado_a.nombre}" if self.prestado_a else "Disponible"
-        return f"Titulo: {self.titulo}, Autor: {self.autor}, ISBN: {self.isbn}, Estado: {estado}"
+        return f"Titulo: {self.titulo}, Autor: {self.autor}, BookID: {self.BookID}, Estado: {estado}"
 
 class Miembro:
     def __init__(self, nombre, id_miembro):
@@ -42,24 +42,24 @@ class Biblioteca:
         self.catalogo.append(libro)
         return f"Libro '{libro.titulo}' agregado al catálogo."
 
-    def prestar_libro(self, isbn, id_miembro):
+    def prestar_libro(self, BookID, id_miembro):
         miembro = next((m for m in self.miembros if m.id_miembro == id_miembro), None)
         if miembro is None:
             return "Miembro no encontrado."
         for libro in self.catalogo:
-            if libro.isbn == isbn:
+            if libro.BookID == BookID:
                 return libro.prestar(miembro)
         return "Libro no encontrado."
 
-    def devolver_libro(self, isbn):
+    def devolver_libro(self, BookID):
         for libro in self.catalogo:
-            if libro.isbn == isbn:
+            if libro.BookID == BookID:
                 return libro.devolver()
         return "Libro no encontrado."
 
-    def actualizar_libro(self, isbn):
+    def actualizar_libro(self, BookID):
         for libro in self.catalogo:
-            if libro.isbn == isbn:
+            if libro.BookID == BookID:
                 libro.prestado_a = None
                 return f"Estado del libro '{libro.titulo}' actualizado."
         return "Libro no encontrado."
@@ -76,20 +76,7 @@ class Biblioteca:
     
     
 
-def prestar_libro():
-    entry_isbn=input("Ingrese el ISBN del libro a prestar: ")
-    isbn = entry_isbn.get()
-    id_miembro = entry_id_prestamo.get()
-    biblioteca = Biblioteca()
-    messagebox.showinfo("Resultado", biblioteca.prestar_libro(isbn, id_miembro))
-    tk.Label(frame, text="ID Miembro para Préstamo:").grid(row=11, column=0)
-    entry_id_prestamo = tk.Entry(frame)
-    entry_id_prestamo.grid(row=11, column=1)
 
-    
-    btn_prestar = tk.Button(frame, text="Prestar Libro")
-    btn_prestar.configure(command=prestar_libro)
-    
 def agregar_libro():
     ventana_agregar = tk.Toplevel(root)
     ventana_agregar.title("Agregar Libro")
@@ -102,16 +89,16 @@ def agregar_libro():
     entry_autor = tk.Entry(ventana_agregar)
     entry_autor.grid(row=1, column=1)
 
-    tk.Label(ventana_agregar, text="ISBN:").grid(row=2, column=0)
-    entry_isbn = tk.Entry(ventana_agregar)
-    entry_isbn.grid(row=2, column=1)
+    tk.Label(ventana_agregar, text="BookID:").grid(row=2, column=0)
+    entry_BookID = tk.Entry(ventana_agregar)
+    entry_BookID.grid(row=2, column=1)
 
     def anadir_libro():
         titulo = entry_titulo.get()
         autor = entry_autor.get()
-        isbn = entry_isbn.get()
-        if titulo and autor and isbn:
-            libro = Libro(titulo, autor, isbn)
+        BookID = entry_BookID.get()
+        if titulo and autor and BookID:
+            libro = Libro(titulo, autor, BookID)
             biblioteca.anadir_libro(libro)
             messagebox.showinfo("Éxito", f"Libro '{titulo}' agregado correctamente.")
             ventana_agregar.destroy()  # Cierra la ventana después de agregar
@@ -120,11 +107,53 @@ def agregar_libro():
 
     tk.Button(ventana_agregar, text="Agregar", command=anadir_libro).grid(row=3, column=0, columnspan=2, pady=10)
     
+def abrir_prestamo():
+    ventana_prestamo = tk.Toplevel(root)
+    ventana_prestamo.title("Prestar Libro")
 
+    tk.Label(ventana_prestamo, text="BookID del Libro:").grid(row=0, column=0)
+    entry_BookID = tk.Entry(ventana_prestamo)
+    entry_BookID.grid(row=0, column=1)
 
-def devolver_libro():
-    isbn = entry_isbn.get()
-    messagebox.showinfo("Resultado", biblioteca.devolver_libro(isbn))
+    tk.Label(ventana_prestamo, text="ID del Miembro:").grid(row=1, column=0)
+    entry_id_miembro = tk.Entry(ventana_prestamo)
+    entry_id_miembro.grid(row=1, column=1)
+
+    def prestar_libro():
+        BookID = entry_BookID.get()
+        id_miembro = entry_id_miembro.get()
+
+        if not BookID or not id_miembro:
+            messagebox.showwarning("Error", "Todos los campos son obligatorios.")
+            return
+
+        resultado = biblioteca.prestar_libro(BookID, id_miembro)
+        messagebox.showinfo("Resultado", resultado)
+        ventana_prestamo.destroy()  # Cierra la ventana después de prestar el libro
+
+    tk.Button(ventana_prestamo, text="Prestar", command=prestar_libro).grid(row=2, column=0, columnspan=2, pady=10)
+
+def abrir_devolucion():
+    ventana_devolucion = tk.Toplevel(root)
+    ventana_devolucion.title("Devolver Libro")
+
+    tk.Label(ventana_devolucion, text="BookID del Libro:").grid(row=0, column=0)
+    entry_BookID_devolucion = tk.Entry(ventana_devolucion)
+    entry_BookID_devolucion.grid(row=0, column=1)
+
+    def devolver_libro():
+        BookID = entry_BookID_devolucion.get()
+
+        if not BookID:
+            messagebox.showwarning("Error", "Debe ingresar el BookID del libro.")
+            return
+
+        resultado = biblioteca.devolver_libro(BookID)
+        messagebox.showinfo("Resultado", resultado)
+        ventana_devolucion.destroy() 
+
+    tk.Button(ventana_devolucion, text="Devolver", command=devolver_libro).grid(row=1, column=0, columnspan=2, pady=10)
+
 
 def mostrar_catalogo():
     messagebox.showinfo("Catálogo", biblioteca.mostrar_catalogo())
@@ -133,9 +162,9 @@ def abrir_actualizar_libro():
     ventana_actualizar = tk.Toplevel(root)
     ventana_actualizar.title("Actualizar Libro")
 
-    tk.Label(ventana_actualizar, text="ISBN del Libro:").grid(row=0, column=0)
-    entry_isbn_buscar = tk.Entry(ventana_actualizar)
-    entry_isbn_buscar.grid(row=0, column=1)
+    tk.Label(ventana_actualizar, text="BookID del Libro:").grid(row=0, column=0)
+    entry_BookID_buscar = tk.Entry(ventana_actualizar)
+    entry_BookID_buscar.grid(row=0, column=1)
 
     tk.Label(ventana_actualizar, text="Nuevo Título:").grid(row=1, column=0)
     entry_nuevo_titulo = tk.Entry(ventana_actualizar)
@@ -146,17 +175,17 @@ def abrir_actualizar_libro():
     entry_nuevo_autor.grid(row=2, column=1)
 
     def actualizar_libro():
-        isbn = entry_isbn_buscar.get()
+        BookID = entry_BookID_buscar.get()
         nuevo_titulo = entry_nuevo_titulo.get()
         nuevo_autor = entry_nuevo_autor.get()
 
         for libro in biblioteca.catalogo:
-            if libro.isbn == isbn:
+            if libro.BookID == BookID:
                 if nuevo_titulo:
                     libro.titulo = nuevo_titulo
                 if nuevo_autor:
                     libro.autor = nuevo_autor
-                messagebox.showinfo("Éxito", f"Libro con ISBN {isbn} actualizado correctamente.")
+                messagebox.showinfo("Éxito", f"Libro con BookID {BookID} actualizado correctamente.")
                 ventana_actualizar.destroy()
                 return
         
@@ -207,10 +236,10 @@ btn_agregar.grid(row=0, column=1, columnspan=1)
 btn_agregar = tk.Button(frame, text="Agregar Miembro ", command=abrir_agregar_miembro)
 btn_agregar.grid(row=0, column=2, columnspan=1)
 
-btn_prestar = tk.Button(frame, text="Prestar Libro", command=prestar_libro)
+btn_prestar = tk.Button(frame, text="Prestar Libro", command=abrir_prestamo)
 btn_prestar.grid(row=1, column=0, columnspan=1)
 
-btn_devolver = tk.Button(frame, text="Devolver Libro", command=devolver_libro)
+btn_devolver = tk.Button(frame, text="Devolver Libro", command=abrir_devolucion)
 btn_devolver.grid(row=1, column=1, columnspan=1)
 
 btn_mostrar = tk.Button(frame, text="Mostrar Catálogo", command=mostrar_catalogo)
