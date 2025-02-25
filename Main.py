@@ -5,19 +5,60 @@ from tkinter import ttk
 
 
 class Libro:
-    def __init__(self, titulo, autor, BookID):
+    db_name = 'database.db'
+    def __init__(self, titulo, autor, bookID):
         self.titulo = titulo
         self.autor = autor
-        self.BookID = BookID
+        self.bookID = bookID
+        self.estado = "Disponible"
         self.prestado_a = None
+        
 
-    def prestar(self, miembro):
-        if self.prestado_a is None:
-            self.prestado_a = miembro
-            return f"El libro '{self.titulo}' ha sido prestado a {miembro.nombre}."
-        return f"El libro '{self.titulo}' ya está prestado a {self.prestado_a.nombre}."
+    def run_query(self, query, parametros=()):
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                resultado = cursor.execute(query, parametros)
+                conn.commit()
+            return resultado
+    
+    def prestarse(self, bookID ,miembro_id):
+       
+        query0="SELECT estado  FROM libros WHERE bookID = ?" 
+        parametros1 =(bookID,)
+        estadoLibro= self.run_query(query0,parametros1)
 
-    def devolver(self):
+        query1="SELECT nombre FROM miembros WHERE id_miembro= ?" 
+        parametros2 =(miembro_id,)
+        nombreMiembro = self.run_query(query1,parametros2)
+
+        """ if not estadoLibro:  
+         return f"Error: No se encontró un libro con el ID {bookID}."
+
+        estado= estadoLibro.estado
+
+        if estado == "Prestado":
+            return f"El libro ya está prestado a {estadoLibro.prestado_a}." """
+
+        
+        query2 = "SELECT nombre FROM miembros WHERE id_miembro = ?"
+        parametros3 = (miembro_id,)  
+        nombreMiembro = self.run_query(query2, parametros3).fetchone()
+        
+        print(nombreMiembro)
+        if not nombreMiembro:
+            return f"Error: No se encontró un miembro con el ID {miembro_id}."
+
+        
+        
+        query3 = "UPDATE libros SET estado = ?, prestado_a = ? WHERE bookID = ?"
+        parametros4 = ("Prestado", nombreMiembro, bookID)
+        self.run_query(query3, parametros4)
+
+        return f"El libro ha sido prestado a {nombreMiembro}."
+
+     
+    
+    def devolverse(self):
         if self.prestado_a is not None:
             nombre_miembro = self.prestado_a.nombre
             self.prestado_a = None
@@ -43,6 +84,7 @@ class Biblioteca:
         self.miembros = []
 
         self.create_table()
+        self.create_table2()
         
     def run_query(self, query, parametros=()):
         with sqlite3.connect(self.db_name) as conn:
@@ -54,61 +96,66 @@ class Biblioteca:
     
     def create_table(self):
         query = '''CREATE TABLE IF NOT EXISTS libros (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     nombre TEXT NOT NULL,
-                    libro TEXT NOT NULL,
+                    titulo TEXT NOT NULL,
                     bookID TEXT UNIQUE NOT NULL,
-                    estado TEXT NOT NULL
+                    estado TEXT NOT NULL,
+                    prestado_a TEXT 
+                )'''
+        self.run_query(query)
+        
+    def create_table2(self):
+        query = '''CREATE TABLE IF NOT EXISTS miembros (
+                    nombre TEXT NOT NULL,
+                    id_miembro TEXT NOT NULL
                 )'''
         self.run_query(query)
         
     def anadir_libro(self, libro):
         self.catalogo.append(libro)
-        query = 'INSERT INTO libros VALUES (NULL, ?, ?, ?, "Disponible")'
-        parametros = (libro.titulo, libro.autor, libro.BookID)
+        query = 'INSERT INTO libros VALUES ( ?, ?, ?, "Disponible", "")'
+        parametros = (libro.titulo, libro.autor, libro.bookID)
         self.run_query(query, parametros)
+        
+    
         
     def get_libros(self):
         
         ventana = tk.Toplevel()
         ventana.title("Lista de Libros")
-        ventana.geometry("700x500")  # Ajustar tamaño
+        ventana.geometry("700x500")  
 
-        # Crear Treeview (tabla)
+        
         tree = ttk.Treeview(ventana, columns=("Nombre", "Autor", "BookID", "Estado"), show="headings")
         
-        # Definir encabezados
+      
         tree.heading("Nombre", text="Nombre")
         tree.heading("Autor", text="Autor")
         tree.heading("BookID", text="BookID")
         tree.heading("Estado", text="Estado")
         
-        # Ajustar ancho de columnas
+        
         tree.column("Nombre", width=200)
         tree.column("Autor", width=150)
         tree.column("BookID", width=100)
         tree.column("Estado", width=100)
 
-        # Obtener datos de la base de datos
-        query = 'SELECT nombre, libro, bookID, estado FROM libros ORDER BY nombre DESC'
-        db_rows = self.run_query(query)
+        try :
+            query = 'SELECT nombre, titulo, bookID, estado FROM libros ORDER BY bookID DESC'
+            db_rows = self.run_query(query)
 
-        # Insertar datos en la tabla
-        for row in db_rows:
-            tree.insert("", tk.END, values=row)
-
-        # Ubicar tabla en ventana
-        tree.pack(expand=True, fill="both")
-        ventana.grab_set()
         
-    def prestar_libro(self, BookID, id_miembro):
-        miembro = next((m for m in self.miembros if m.id_miembro == id_miembro), None)
-        if miembro is None:
-            return "Miembro no encontrado."
-        for libro in self.catalogo:
-            if libro.BookID == BookID:
-                return libro.prestar(miembro)
-        return "Libro no encontrado."
+            for row in db_rows:
+                tree.insert("", tk.END, values=row)
+
+        
+            tree.pack(expand=True, fill="both")
+            ventana.grab_set()
+            
+        except Exception as e:
+            print(f"No hay libros disponibles")
+        
+    
 
     def devolver_libro(self, BookID):
         for libro in self.catalogo:
@@ -124,9 +171,10 @@ class Biblioteca:
         return "Libro no encontrado."
     
     
-    def agregar_miembro(self, miembro):
-        self.miembros.append(miembro)
-        return f"Miembro '{miembro.nombre}' agregado a la biblioteca."
+    def agregar_miembro(self, nombre,id_miembro):
+        query = 'INSERT INTO miembros VALUES ( ?, ? )'
+        parametros = (nombre, id_miembro,)
+        self.run_query(query, parametros)
 
     def mostrar_miembros(self):
         return "\n".join(str(miembro) for miembro in self.miembros) if self.miembros else "No hay miembros registrados."
@@ -186,9 +234,10 @@ def abrir_prestamo():
             messagebox.showwarning("Error", "Todos los campos son obligatorios.")
             return
 
-        resultado = biblioteca.prestar_libro(BookID, id_miembro)
+        libro = Libro( "", "",BookID)
+        resultado = libro.prestarse(BookID, id_miembro)
         messagebox.showinfo("Resultado", resultado)
-        ventana_prestamo.destroy()  # Cierra la ventana después de prestar el libro
+        ventana_prestamo.destroy()  
 
     tk.Button(ventana_prestamo, text="Prestar", command=prestar_libro).grid(row=2, column=0, columnspan=2, pady=10)
 
@@ -271,7 +320,7 @@ def abrir_agregar_miembro():
 
         if nombre and id_miembro:
             miembro = Miembro(nombre, id_miembro)
-            biblioteca.agregar_miembro(miembro)
+            biblioteca.agregar_miembro(nombre,id_miembro)
             messagebox.showinfo("Éxito", f"Miembro '{nombre}' agregado correctamente.")
             ventana_miembro.destroy()  
         else:
@@ -279,13 +328,12 @@ def abrir_agregar_miembro():
 
     tk.Button(ventana_miembro, text="Agregar", command=agregar_miembro).grid(row=2, column=0, columnspan=2, pady=10)
     
-# Configuración de la interfaz gráfica
+
 biblioteca = Biblioteca()
 root = tk.Tk()
 root.title("Gestión de Biblioteca")
-root.configure(bg="orange")  # Fondo negro para la ventana principal
+root.configure(bg="orange") 
 
-# Crear frame dentro de la ventana principal
 frame = tk.Frame(root, bg="black")  
 frame = tk.Frame(root)
 frame.pack(padx=100, pady=100)
