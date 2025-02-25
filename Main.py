@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import sqlite3
+from tkinter import ttk
 
 
 class Libro:
@@ -56,31 +57,50 @@ class Biblioteca:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     nombre TEXT NOT NULL,
                     libro TEXT NOT NULL,
-                    BookID TEXT UNIQUE NOT NULL
+                    bookID TEXT UNIQUE NOT NULL,
+                    estado TEXT NOT NULL
                 )'''
         self.run_query(query)
         
     def anadir_libro(self, libro):
         self.catalogo.append(libro)
-        query = 'INSERT INTO libros VALUES (NULL, ?, ?, ?)'
+        query = 'INSERT INTO libros VALUES (NULL, ?, ?, ?, "Disponible")'
         parametros = (libro.titulo, libro.autor, libro.BookID)
         self.run_query(query, parametros)
         
     def get_libros(self):
-        query = 'SELECT nombre, libro, BookID FROM libros ORDER BY nombre DESC'
-        db_rows = self.run_query(query)  # Ejecuta la consulta
         
-        # Extraer los datos y devolverlos como una lista de diccionarios
-        libros = []
-        for row in db_rows:
-            libros.append({
-                "nombre": row[0],
-                "libro": row[1],
-                "BookID": row[2]
-            })
-        
-        return libros
+        ventana = tk.Toplevel()
+        ventana.title("Lista de Libros")
+        ventana.geometry("700x500")  # Ajustar tamaño
 
+        # Crear Treeview (tabla)
+        tree = ttk.Treeview(ventana, columns=("Nombre", "Autor", "BookID", "Estado"), show="headings")
+        
+        # Definir encabezados
+        tree.heading("Nombre", text="Nombre")
+        tree.heading("Autor", text="Autor")
+        tree.heading("BookID", text="BookID")
+        tree.heading("Estado", text="Estado")
+        
+        # Ajustar ancho de columnas
+        tree.column("Nombre", width=200)
+        tree.column("Autor", width=150)
+        tree.column("BookID", width=100)
+        tree.column("Estado", width=100)
+
+        # Obtener datos de la base de datos
+        query = 'SELECT nombre, libro, bookID, estado FROM libros ORDER BY nombre DESC'
+        db_rows = self.run_query(query)
+
+        # Insertar datos en la tabla
+        for row in db_rows:
+            tree.insert("", tk.END, values=row)
+
+        # Ubicar tabla en ventana
+        tree.pack(expand=True, fill="both")
+        ventana.grab_set()
+        
     def prestar_libro(self, BookID, id_miembro):
         miembro = next((m for m in self.miembros if m.id_miembro == id_miembro), None)
         if miembro is None:
@@ -195,9 +215,8 @@ def abrir_devolucion():
 
 
 def mostrar_catalogo():
-    
 
-    messagebox.showinfo("Catálogo", biblioteca.get_libros())
+    biblioteca.get_libros()
     
 def abrir_actualizar_libro():
     ventana_actualizar = tk.Toplevel(root)
@@ -264,9 +283,13 @@ def abrir_agregar_miembro():
 biblioteca = Biblioteca()
 root = tk.Tk()
 root.title("Gestión de Biblioteca")
+root.configure(bg="orange")  # Fondo negro para la ventana principal
 
+# Crear frame dentro de la ventana principal
+frame = tk.Frame(root, bg="black")  
 frame = tk.Frame(root)
 frame.pack(padx=100, pady=100)
+
 
 btn_agregar = tk.Button(frame, text="Agregar Libro", command=agregar_libro)
 btn_agregar.grid(row=0, column=0, columnspan=1)
