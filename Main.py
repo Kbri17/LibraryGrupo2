@@ -23,41 +23,33 @@ class Libro:
     
     def prestarse(self, bookID ,miembro_id):
        
-        query0="SELECT estado  FROM libros WHERE bookID = ?" 
+        query0="SELECT estado FROM libros WHERE bookID = ?" 
         parametros1 =(bookID,)
-        estadoLibro= self.run_query(query0,parametros1)
+        estadoLibro= self.run_query(query0,parametros1).fetchone()
 
-        query1="SELECT nombre FROM miembros WHERE id_miembro= ?" 
-        parametros2 =(miembro_id,)
-        nombreMiembro = self.run_query(query1,parametros2)
-
-        """ if not estadoLibro:  
+        if not estadoLibro:  
          return f"Error: No se encontró un libro con el ID {bookID}."
 
-        estado= estadoLibro.estado
+        estado= estadoLibro[0]
 
         if estado == "Prestado":
-            return f"El libro ya está prestado a {estadoLibro.prestado_a}." """
-
+            return f"El libro ya está prestado"
         
         query2 = "SELECT nombre FROM miembros WHERE id_miembro = ?"
-        parametros3 = (miembro_id,)  
-        nombreMiembro = self.run_query(query2, parametros3).fetchone()
-        
-        print(nombreMiembro)
+        parametros2= (miembro_id,)  
+        nombreMiembro = self.run_query(query2, parametros2).fetchone()
+      
         if not nombreMiembro:
             return f"Error: No se encontró un miembro con el ID {miembro_id}."
 
-        
-        
-        query3 = "UPDATE libros SET estado = ?, prestado_a = ? WHERE bookID = ?"
-        parametros4 = ("Prestado", nombreMiembro, bookID)
-        self.run_query(query3, parametros4)
 
-        return f"El libro ha sido prestado a {nombreMiembro}."
+        query3 = "UPDATE libros SET estado = ?, prestado_a = ? WHERE bookID = ?"
+        parametros3= ("Prestado", nombreMiembro[0],bookID,)
+        self.run_query(query3, parametros3)
+
+        return f"El libro ha sido prestado a {nombreMiembro[0]}."
 
      
-    
     def devolverse(self):
         if self.prestado_a is not None:
             nombre_miembro = self.prestado_a.nombre
