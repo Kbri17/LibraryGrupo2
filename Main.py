@@ -50,16 +50,28 @@ class Libro:
         return f"El libro ha sido prestado a {nombreMiembro[0]}."
 
      
-    def devolverse(self):
-        if self.prestado_a is not None:
-            nombre_miembro = self.prestado_a.nombre
-            self.prestado_a = None
-            return f"El libro '{self.titulo}' ha sido devuelto por {nombre_miembro}."
-        return f"El libro '{self.titulo}' no estaba prestado."
+    def devolverse(self, bookID ,miembro_id):
 
-    def __str__(self):
-        estado = f"Prestado a {self.prestado_a.nombre}" if self.prestado_a else "Disponible"
-        return f"Titulo: {self.titulo}, Autor: {self.autor}, BookID: {self.BookID}, Estado: {estado}"
+        queryS="SELECT prestado_a FROM libros WHERE BookID = ?"
+        parametrosS = (bookID,)
+        estadoPrestado= self.run_query(queryS,parametrosS).fetchone()
+
+        if not estadoPrestado or estadoPrestado[0] is None:
+            return f"El libro no está prestado."
+            
+        queryN= "SELECT nombre FROM miembros WHERE id_miembro = ?"
+        parametrosN = (miembro_id,)
+        nombreN = self.run_query(queryN, parametrosN).fetchone()
+        nombre_miembro = nombreN[0]
+        
+        if not nombre_miembro:
+            return f"Error: No se encontró un miembro con el ID {miembro_id}."
+        
+        queryP="UPDATE libros SET estado = ? WHERE BookID = ?"
+        parametrosQ=("Disponible",bookID,)
+        self.run_query(queryP, parametrosQ)
+
+        return f"El libro con ID {bookID} ha sido devuelto por {nombre_miembro}."
 
 class Miembro:
     def __init__(self, nombre, id_miembro):
@@ -79,17 +91,21 @@ class Biblioteca:
         self.create_table2()
         
     def run_query(self, query, parametros=()):
-        with sqlite3.connect(self.db_name) as conn:
-            cursor = conn.cursor()
-            resultado = cursor.execute(query, parametros)
-            conn.commit()
-        return resultado
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                resultado = cursor.execute(query, parametros)
+                conn.commit()
+            return resultado
+        except sqlite3.Error as e:
+            print(f"Error al ejecutar la consulta: {e}")
+            raise Exception(f"Error general en la base de datos: {e}")
 
     
     def create_table(self):
         query = '''CREATE TABLE IF NOT EXISTS libros (
                     nombre TEXT NOT NULL,
-                    titulo TEXT NOT NULL,
+                    autor TEXT NOT NULL,
                     bookID TEXT UNIQUE NOT NULL,
                     estado TEXT NOT NULL,
                     prestado_a TEXT 
@@ -133,7 +149,7 @@ class Biblioteca:
         tree.column("Estado", width=100)
 
         try :
-            query = 'SELECT nombre, titulo, bookID, estado FROM libros ORDER BY bookID DESC'
+            query = 'SELECT nombre, autor , bookID, estado FROM libros ORDER BY bookID DESC'
             db_rows = self.run_query(query)
 
         
@@ -149,19 +165,13 @@ class Biblioteca:
         
     
 
-    def devolver_libro(self, BookID):
-        for libro in self.catalogo:
-            if libro.BookID == BookID:
-                return libro.devolver()
-        return "Libro no encontrado."
-
-    def actualizar_libro(self, BookID):
-        for libro in self.catalogo:
-            if libro.BookID == BookID:
-                libro.prestado_a = None
-                return f"Estado del libro '{libro.titulo}' actualizado."
-        return "Libro no encontrado."
-    
+    def actualizar_libro(self,libro):
+        
+        query = 'UPDATE libros SET nombre= ? , autor = ? WHERE bookID = ?'
+        parametros = (libro.titulo, libro.autor, libro.bookID,)
+        self.run_query(query, parametros)
+        
+        messagebox.showinfo("Éxito", f"Libro con BookID {libro.bookID}  actualizado correctamente.")
     
     def agregar_miembro(self, nombre,id_miembro):
         query = 'INSERT INTO miembros VALUES ( ?, ? )'
@@ -191,17 +201,19 @@ def agregar_libro():
     entry_BookID.grid(row=2, column=1)
 
     def anadir_libro():
-        titulo = entry_titulo.get()
-        autor = entry_autor.get()
-        BookID = entry_BookID.get()
-        if titulo and autor and BookID:
-            libro = Libro(titulo, autor, BookID)
-            biblioteca.anadir_libro(libro)
-            messagebox.showinfo("Éxito", f"Libro '{titulo}' agregado correctamente.")
-            ventana_agregar.destroy()  # Cierra la ventana después de agregar
-        else:
-            messagebox.showwarning("Error", "Todos los campos son obligatorios.")
-            
+        try: 
+            titulo = entry_titulo.get()
+            autor = entry_autor.get()
+            BookID = entry_BookID.get()
+            if titulo and autor and BookID:
+                libro = Libro(titulo, autor, BookID)
+                biblioteca.anadir_libro(libro)
+                messagebox.showinfo("Éxito", f"Libro '{titulo}' agregado correctamente.")
+                ventana_agregar.destroy()  
+            else:
+                messagebox.showwarning("Error", "Todos los campos son obligatorios.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al agregar el libro ,Intente nuevamente")
         
 
     tk.Button(ventana_agregar, text="Agregar", command=anadir_libro).grid(row=3, column=0, columnspan=2, pady=10)
@@ -240,19 +252,25 @@ def abrir_devolucion():
     tk.Label(ventana_devolucion, text="BookID del Libro:").grid(row=0, column=0)
     entry_BookID_devolucion = tk.Entry(ventana_devolucion)
     entry_BookID_devolucion.grid(row=0, column=1)
+    
+    tk.Label(ventana_devolucion, text="Nombre del Miembro:").grid(row=1, column=0)
+    entry_BookID_devolucion = tk.Entry(ventana_devolucion)
+    entry_BookID_devolucion.grid(row=1, column=1)
 
     def devolver_libro():
         BookID = entry_BookID_devolucion.get()
-
-        if not BookID:
-            messagebox.showwarning("Error", "Debe ingresar el BookID del libro.")
+        miembro_id = entry_BookID_devolucion.get()
+        
+        if not BookID or not miembro_id:
+            messagebox.showwarning("Error", "Todos los campos son obligatorios.")
             return
 
-        resultado = biblioteca.devolver_libro(BookID)
+        libro = Libro( "", "",BookID)
+        resultado = libro.devolverse(BookID, miembro_id)
         messagebox.showinfo("Resultado", resultado)
         ventana_devolucion.destroy() 
 
-    tk.Button(ventana_devolucion, text="Devolver", command=devolver_libro).grid(row=1, column=0, columnspan=2, pady=10)
+    tk.Button(ventana_devolucion, text="Devolver", command=devolver_libro).grid(row=2, column=0, columnspan=2, pady=10)
 
 
 def mostrar_catalogo():
@@ -280,17 +298,15 @@ def abrir_actualizar_libro():
         nuevo_titulo = entry_nuevo_titulo.get()
         nuevo_autor = entry_nuevo_autor.get()
 
-        for libro in biblioteca.catalogo:
-            if libro.BookID == BookID:
-                if nuevo_titulo:
-                    libro.titulo = nuevo_titulo
-                if nuevo_autor:
-                    libro.autor = nuevo_autor
-                messagebox.showinfo("Éxito", f"Libro con BookID {BookID} actualizado correctamente.")
-                ventana_actualizar.destroy()
-                return
+        if not BookID or not nuevo_titulo or not nuevo_autor:
+            messagebox.showwarning("Error", "Todos los campos son obligatorios.")
+            return
         
-        messagebox.showwarning("Error", "Libro no encontrado.")
+        libro = Libro(nuevo_titulo, nuevo_autor, BookID)
+        resultado = biblioteca.actualizar_libro(libro)
+        messagebox.showinfo("Resultado", resultado)
+        ventana_actualizar.destroy()
+        
 
     tk.Button(ventana_actualizar, text="Actualizar", command=actualizar_libro).grid(row=3, column=0, columnspan=2, pady=10)
     
