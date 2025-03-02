@@ -228,7 +228,7 @@ class Biblioteca:
         messagebox.showinfo("Éxito", f"Libro con BookID {libro.bookID}  actualizado correctamente.")
     
     def agregar_miembro(self, nombre,id_miembro):
-        query = 'INSERT INTO miembros VALUES ( ?, ? )'
+        query = 'INSERT INTO miembros VALUES ( ?, ?, 1 )'
         parametros = (nombre, id_miembro,)
         self.run_query(query, parametros)
 
