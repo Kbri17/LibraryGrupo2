@@ -51,7 +51,7 @@ class Libro:
         
         
         query3 = "UPDATE libros SET estado = ?, prestado_a = ? WHERE bookID = ?"
-        parametros4 = ("Prestado", nombreMiembro, bookID)
+        parametros4 = ("Prestado", nombreMiembro[0], bookID)
         self.run_query(query3, parametros4)
 
         return f"El libro ha sido prestado a {nombreMiembro}."
@@ -76,6 +76,58 @@ class Miembro:
 
     def __str__(self):
         return f"Miembro: {self.nombre}, ID: {self.id_miembro}"
+    
+class Usuario(Miembro):
+    def __init__(self, nombre, id_miembro, tiempo_membresia):
+        super().__init__(nombre, id_miembro)
+        self.tiempo_membresia = tiempo_membresia
+        
+    def pedir_membresia(self, meses):
+        if self.tiempo_membresia > 0:
+            return f'{self.nombre} ya tiene una membresía activa.'
+    
+        self.tiempo_membresia = meses
+        
+        query = "UPDATE miembros SET tiempo_membresia = ? WHERE id_miembro = ?"
+        parametros = (self.tiempo_membresia, self.id_miembro)
+        
+        with sqlite3.connect('database.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, parametros)
+            conn.commit()
+            
+        return f'{self.nombre} ha obtenido una membresía por {meses} meses.'
+
+
+    def renovar_membresia(self, meses):
+        if meses <= 0:
+            return'La cantidad de meses debe ser mayor a 0'
+        
+        self.tiempo_membresia += meses
+        
+        query = "UPDATE miembros SET tiempo_membresia = ? WHERE id_miembro = ?"
+        parametros = (self.tiempo_membresia, self.id_miembro)
+    
+        with sqlite3.connect('database.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, parametros)
+            conn.commit()
+    
+        return f'La membresía de {self.nombre} ha sido renovada por {meses} meses.'
+    
+    
+    def eliminar_membresia(self):
+        self.tiempo_membresia = 0
+        
+        query = "UPDATE miembros SET tiempo_membresia = 0 WHERE id_miembro = ?"
+        parametros = (self.id_miembro,)
+        
+        with sqlite3.connect('database.db')as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, parametros)
+            conn.commit()
+        return f'La membresía de {self.nombre} ha sido eliminada.'
+        
 
 class Biblioteca:
     db_name = 'database.db'
@@ -107,7 +159,8 @@ class Biblioteca:
     def create_table2(self):
         query = '''CREATE TABLE IF NOT EXISTS miembros (
                     nombre TEXT NOT NULL,
-                    id_miembro TEXT NOT NULL
+                    id_miembro TEXT NOT NULL,
+                    tiempo_membresia INTEGER NOT NULL
                 )'''
         self.run_query(query)
         
@@ -313,6 +366,7 @@ def abrir_agregar_miembro():
     tk.Label(ventana_miembro, text="ID del Miembro:").grid(row=1, column=0)
     entry_id_miembro = tk.Entry(ventana_miembro)
     entry_id_miembro.grid(row=1, column=1)
+    
 
     def agregar_miembro():
         nombre = entry_nombre.get()
@@ -328,7 +382,24 @@ def abrir_agregar_miembro():
 
     tk.Button(ventana_miembro, text="Agregar", command=agregar_miembro).grid(row=2, column=0, columnspan=2, pady=10)
     
+def membresia():
+    ventana_membresia = tk.Toplevel()
+    ventana_membresia.title("Gestión de Membresías")
 
+    tk.Label(ventana_membresia, text="Nombre:").grid(row=0, column=0)
+    entry_nombre = tk.Entry(ventana_membresia)
+    entry_nombre.grid(row=0, column=1)
+
+    tk.Label(ventana_membresia, text="ID del Miembro:").grid(row=1, column=0)
+    entry_id_miembro = tk.Entry(ventana_membresia)
+    entry_id_miembro.grid(row=1, column=1)
+
+    tk.Label(ventana_membresia, text="Fecha de Vencimiento (YYYY-MM-DD):").grid(row=2, column=0)
+    entry_fecha = tk.Entry(ventana_membresia)
+    entry_fecha.grid(row=2, column=1)
+    
+
+   
 biblioteca = Biblioteca()
 root = tk.Tk()
 root.title("Gestión de Biblioteca")
@@ -356,6 +427,9 @@ btn_devolver.grid(row=1, column=1, columnspan=1)
 
 btn_mostrar = tk.Button(frame, text="Mostrar Catálogo", command=mostrar_catalogo)
 btn_mostrar.grid(row=1, column=2, columnspan=1)
+
+btn_membresia = tk.Button(frame, text= "Adquirir_membresia", command=membresia )
+btn_membresia.grid(row=2, column=3, columnspan=1)
 
 root.mainloop()
 
