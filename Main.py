@@ -357,7 +357,7 @@ def abrir_actualizar_libro():
     
 def abrir_agregar_miembro():
     ventana_miembro = tk.Toplevel(root)
-    ventana_miembro.title("Agregar Miembro")
+    ventana_miembro.title("Gestión de Miembros")
 
     tk.Label(ventana_miembro, text="Nombre:").grid(row=0, column=0)
     entry_nombre = tk.Entry(ventana_miembro)
@@ -366,40 +366,66 @@ def abrir_agregar_miembro():
     tk.Label(ventana_miembro, text="ID del Miembro:").grid(row=1, column=0)
     entry_id_miembro = tk.Entry(ventana_miembro)
     entry_id_miembro.grid(row=1, column=1)
-    
 
+    tk.Label(ventana_miembro, text="Fecha de Vencimiento (YYYY-MM-DD):").grid(row=2, column=0)
+    entry_fecha = tk.Entry(ventana_miembro)
+    entry_fecha.grid(row=2, column=1)
+
+   
     def agregar_miembro():
         nombre = entry_nombre.get()
         id_miembro = entry_id_miembro.get()
 
         if nombre and id_miembro:
-            miembro = Miembro(nombre, id_miembro)
-            biblioteca.agregar_miembro(nombre,id_miembro)
+            biblioteca.agregar_miembro(nombre, id_miembro)
             messagebox.showinfo("Éxito", f"Miembro '{nombre}' agregado correctamente.")
-            ventana_miembro.destroy()  
+            ventana_miembro.destroy()
         else:
             messagebox.showwarning("Error", "Todos los campos son obligatorios.")
 
-    tk.Button(ventana_miembro, text="Agregar", command=agregar_miembro).grid(row=2, column=0, columnspan=2, pady=10)
     
-def membresia():
-    ventana_membresia = tk.Toplevel()
-    ventana_membresia.title("Gestión de Membresías")
+    def agregar_membresia():
+        id_miembro = entry_id_miembro.get()
+        fecha_vencimiento = entry_fecha.get()
 
-    tk.Label(ventana_membresia, text="Nombre:").grid(row=0, column=0)
-    entry_nombre = tk.Entry(ventana_membresia)
-    entry_nombre.grid(row=0, column=1)
+        if not id_miembro or not fecha_vencimiento:
+            messagebox.showerror("Error", "ID y Fecha de Vencimiento son obligatorios")
+            return
 
-    tk.Label(ventana_membresia, text="ID del Miembro:").grid(row=1, column=0)
-    entry_id_miembro = tk.Entry(ventana_membresia)
-    entry_id_miembro.grid(row=1, column=1)
+        messagebox.showinfo("Éxito", "Membresía agregada correctamente.")
+        return
+    
+    def renovar_membresia():
+        id_miembro = entry_id_miembro.get()
+        fecha_vencimiento = entry_fecha.get()
 
-    tk.Label(ventana_membresia, text="Fecha de Vencimiento (YYYY-MM-DD):").grid(row=2, column=0)
-    entry_fecha = tk.Entry(ventana_membresia)
-    entry_fecha.grid(row=2, column=1)
+        if not id_miembro or not fecha_vencimiento:
+            messagebox.showerror("Error", "ID y Fecha de Vencimiento son obligatorios")
+            return
+
+        messagebox.showinfo("Éxito", "Membresía renovada correctamente.")
+        return
+
+    
+    def eliminar_membresia():
+        id_miembro = entry_id_miembro.get()
+
+        if not id_miembro:
+            messagebox.showerror("Error", "ID del miembro es obligatorio")
+            return
+
+        messagebox.showinfo("Eliminado", "Membresía eliminada correctamente.")
+        
+
+
+    
+    tk.Button(ventana_miembro, text="Agregar", command=agregar_membresia).grid(row=3, column=0, pady=10)
+    tk.Button(ventana_miembro, text="Renovar", command=renovar_membresia).grid(row=3, column=1, pady=10)
+    tk.Button(ventana_miembro, text="Eliminar", command=eliminar_membresia).grid(row=3, column=2, pady=10)
+
+
     
 
-   
 biblioteca = Biblioteca()
 root = tk.Tk()
 root.title("Gestión de Biblioteca")
@@ -428,8 +454,6 @@ btn_devolver.grid(row=1, column=1, columnspan=1)
 btn_mostrar = tk.Button(frame, text="Mostrar Catálogo", command=mostrar_catalogo)
 btn_mostrar.grid(row=1, column=2, columnspan=1)
 
-btn_membresia = tk.Button(frame, text= "Adquirir_membresia", command=membresia )
-btn_membresia.grid(row=2, column=3, columnspan=1)
 
 root.mainloop()
 
