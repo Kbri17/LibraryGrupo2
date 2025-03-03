@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import Image, messagebox
 import sqlite3
 from tkinter import ttk
+from PIL import Image, ImageTk
 
 
 class Libro:
