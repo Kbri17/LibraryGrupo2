@@ -234,8 +234,48 @@ class Biblioteca:
 
     def mostrar_miembros(self):
         return "\n".join(str(miembro) for miembro in self.miembros) if self.miembros else "No hay miembros registrados."
-    
-    
+
+
+class Libro:
+    def __init__(self, titulo, autor, isbn):
+        self.titulo = titulo
+        self.autor = autor
+        self.isbn = isbn
+        self.disponible = True
+
+    def prestar(self):
+        if self.disponible:
+            self.disponible = False
+            return True
+        return False
+
+    def devolver(self, fecha_devolucion, fecha_limite):
+        self.disponible = True
+        if fecha_devolucion <= fecha_limite:
+            return "Libro devuelto a tiempo. Se aplica un descuento."
+        return "Libro devuelto fuera de tiempo."
+
+class Usuario:
+    def __init__(self, nombre, id_usuario):
+        self.nombre = nombre
+        self.id_usuario = id_usuario
+        self.libros_prestados = []
+
+    def tomar_prestado(self, libro, fecha_prestamo, fecha_limite):
+        if libro.prestar():
+            self.libros_prestados.append((libro, fecha_prestamo, fecha_limite))
+            return f"Libro {libro.titulo} prestado a {self.nombre}."
+        return "El libro no está disponible."
+
+    def devolver_libro(self, libro, fecha_devolucion):
+        for prestamo in self.libros_prestados:
+            if prestamo[0] == libro:
+                self.libros_prestados.remove(prestamo)
+                return libro.devolver(fecha_devolucion, prestamo[2])
+        return "Este usuario no tiene prestado ese libro."
+
+
+
 
 
 def agregar_libro():
