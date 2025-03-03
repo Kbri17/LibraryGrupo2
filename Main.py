@@ -386,13 +386,15 @@ def abrir_agregar_miembro():
         id_miembro = entry_id_miembro.get()
 
         if nombre and id_miembro:
-            biblioteca.agregar_miembro(nombre, id_miembro)
-            messagebox.showinfo("Éxito", f"Miembro '{nombre}' agregado correctamente.")
+            if agregar_miembro(nombre, id_miembro):
+                messagebox.showinfo("Éxito", f"Mientro '{nombre}' agregado correctamente.")
+            else:
+                messagebox.showerror("Error", "Todos los campos son obligatorios.")
             ventana_miembro.destroy()
         else:
-            messagebox.showwarning("Error", "Todos los campos son obligatorios.")
+            messagebox.showwarning("Error", "Todos los campos son obligatorios.")         
+             
 
-    
     def agregar_membresia():
         id_miembro = entry_id_miembro.get()
         fecha_vencimiento = entry_fecha.get()
@@ -401,8 +403,9 @@ def abrir_agregar_miembro():
             messagebox.showerror("Error", "ID y Fecha de Vencimiento son obligatorios")
             return
 
+        agregar_membresia(id_miembro, fecha_vencimiento)
         messagebox.showinfo("Éxito", "Membresía agregada correctamente.")
-        return
+        
     
     def renovar_membresia():
         id_miembro = entry_id_miembro.get()
@@ -413,7 +416,7 @@ def abrir_agregar_miembro():
             return
 
         messagebox.showinfo("Éxito", "Membresía renovada correctamente.")
-        return
+        
 
     
     def eliminar_membresia():
