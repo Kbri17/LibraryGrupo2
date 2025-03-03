@@ -441,33 +441,55 @@ def abrir_agregar_miembro():
 biblioteca = Biblioteca()
 root = tk.Tk()
 root.title("Gestión de Biblioteca")
-root.configure(bg="orange") 
-
-frame = tk.Frame(root, bg="black")  
-frame = tk.Frame(root)
-frame.pack(padx=100, pady=100)
+root.geometry("626x351")
 
 
-btn_agregar = tk.Button(frame, text="Agregar Libro", command=agregar_libro)
-btn_agregar.grid(row=0, column=0, columnspan=1)
+imagen_fondo = Image.open("biblio.png")
+imagen_fondo = imagen_fondo.resize((626, 351))
+root.imagen_tk = ImageTk.PhotoImage(imagen_fondo)
 
-btn_agregar = tk.Button(frame, text="Actualizar Libro", command=abrir_actualizar_libro)
-btn_agregar.grid(row=0, column=1, columnspan=1)
+fondo_label = tk.Label(root, image=root.imagen_tk)
+fondo_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-btn_agregar = tk.Button(frame, text="Agregar Miembro ", command=abrir_agregar_miembro)
-btn_agregar.grid(row=0, column=2, columnspan=1)
+frame = tk.Frame(root, bg="orange")
+frame.place(relx=0.5, rely=0.5, anchor="center")
 
-btn_prestar = tk.Button(frame, text="Prestar Libro", command=abrir_prestamo)
-btn_prestar.grid(row=1, column=0, columnspan=1)
+icon_agregar = Image.open("agregar_libro.png").resize((32, 32))
+icon_actualizar = Image.open("actualizar.png").resize((32, 32))
+icon_miembro = Image.open("agregar_miembro.png").resize((32, 32))
+icon_prestar = Image.open("prestar_libro.png").resize((32, 32))
+icon_devolver = Image.open("devolver_libro.png").resize((32, 32))
+icon_mostrar = Image.open("catalogo.png").resize((32, 32))
 
-btn_devolver = tk.Button(frame, text="Devolver Libro", command=abrir_devolucion)
-btn_devolver.grid(row=1, column=1, columnspan=1)
+root.icon_agregar_tk = ImageTk.PhotoImage(icon_agregar)
+root.icon_actualizar_tk = ImageTk.PhotoImage(icon_actualizar)
+root.icon_miembro_tk = ImageTk.PhotoImage(icon_miembro)
+root.icon_prestar_tk = ImageTk.PhotoImage(icon_prestar)
+root.icon_devolver_tk = ImageTk.PhotoImage(icon_devolver)
+root.icon_mostrar_tk = ImageTk.PhotoImage(icon_mostrar)
 
-btn_mostrar = tk.Button(frame, text="Mostrar Catálogo", command=mostrar_catalogo)
-btn_mostrar.grid(row=1, column=2, columnspan=1)
+btn_agregar = tk.Button(frame, text="Agregar Libro",
+                        image=root.icon_agregar_tk, compound="left", command=agregar_libro)
+btn_agregar.grid(row=0, column=0, padx=5, pady=5)
 
+btn_actualizar = tk.Button(frame, text="Actualizar Libro",
+                           image=root.icon_actualizar_tk, compound="left", command=abrir_actualizar_libro)
+btn_actualizar.grid(row=0, column=1, padx=5, pady=5)
+
+btn_miembro = tk.Button(frame, text="Agregar Miembro", image=root.icon_miembro_tk,
+                        compound="left", command=abrir_agregar_miembro)
+btn_miembro.grid(row=0, column=2, padx=5, pady=5)
+
+btn_prestar = tk.Button(frame, text="Prestar Libro",
+                        image=root.icon_prestar_tk, compound="left", command=abrir_prestamo)
+btn_prestar.grid(row=1, column=0, padx=5, pady=5)
+
+btn_devolver = tk.Button(frame, text="Devolver Libro",
+                         image=root.icon_devolver_tk, compound="left", command=abrir_devolucion)
+btn_devolver.grid(row=1, column=1, padx=5, pady=5)
+
+btn_mostrar = tk.Button(frame, text="Mostrar Catálogo",
+                        image=root.icon_mostrar_tk, compound="left", command=mostrar_catalogo)
+btn_mostrar.grid(row=1, column=2, padx=5, pady=5)
 
 root.mainloop()
-
-
-
