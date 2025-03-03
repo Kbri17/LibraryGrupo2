@@ -359,8 +359,7 @@ def abrir_actualizar_libro():
             return
         
         libro = Libro(nuevo_titulo, nuevo_autor, BookID)
-        resultado = biblioteca.actualizar_libro(libro)
-        messagebox.showinfo("Resultado", resultado)
+        biblioteca.actualizar_libro(libro)
         ventana_actualizar.destroy()
         
 
