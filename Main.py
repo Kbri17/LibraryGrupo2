@@ -87,35 +87,14 @@ class Miembro(Usuario):
         self.id_miembro = id_miembro
         self.tiempo_membresia = tiempo_membresia
         
-    def pedir_membresia(self, meses):
-        if self.tiempo_membresia > 0:
-            return f'{self.nombre} ya tiene una membresía activa.'
-    
-        self.tiempo_membresia = meses
-        
-        query = "UPDATE miembros SET tiempo_membresia = ? WHERE id_miembro = ?"
-        parametros = (self.tiempo_membresia, self.id_miembro)
-        
-        with sqlite3.connect('database.db') as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, parametros)
-            conn.commit()
-            
+    def pedir_membresia(self, nombre, id_miembro, meses):
+        query = 'INSERT INTO miembros (nombre,id_miembro, tiempo_membresia)VALUES ( ?, ?, ? )'
+        parametros = (nombre, id_miembro, meses)
+        self.run_query(query, parametros)
+        print(f"Parametros a insertar: {parametros}.")
+        print(f"Miembro agregado: {nombre}, ID: {id_miembro}, Membresía: {meses} meses")                   
         return f'{self.nombre} ha obtenido una membresía por {meses} meses.'
     
-class MiembroProfesor(Miembro):
-    def __init__(self, nombre, id_miembro, tiempo_membresia, descuento):
-        super().__init__(nombre, id_miembro, tiempo_membresia)
-        self.descuento = descuento
-
-    def activateDescuento(bool):
-        if bool:
-            return True
-        else:
-            return False
-    
-
-
     def renovar_membresia(self, meses):
         if meses <= 0:
             return'La cantidad de meses debe ser mayor a 0'
@@ -124,12 +103,12 @@ class MiembroProfesor(Miembro):
         
         query = "UPDATE miembros SET tiempo_membresia = ? WHERE id_miembro = ?"
         parametros = (self.tiempo_membresia, self.id_miembro)
-    
+
         with sqlite3.connect('database.db') as conn:
             cursor = conn.cursor()
             cursor.execute(query, parametros)
             conn.commit()
-    
+
         return f'La membresía de {self.nombre} ha sido renovada por {meses} meses.'
     
     
@@ -144,7 +123,18 @@ class MiembroProfesor(Miembro):
             cursor.execute(query, parametros)
             conn.commit()
         return f'La membresía de {self.nombre} ha sido eliminada.'
-        
+    
+class MiembroProfesor(Miembro):
+    def __init__(self, nombre, id_miembro, tiempo_membresia, descuento):
+        super().__init__(nombre, id_miembro, tiempo_membresia)
+        self.descuento = descuento
+
+    def activateDescuento(bool):
+        if bool:
+            return True
+        else:
+            return False
+    
 
 class Biblioteca:
     db_name = 'database.db'
@@ -239,10 +229,6 @@ class Biblioteca:
         
         messagebox.showinfo("Éxito", f"Libro con BookID {libro.bookID}  actualizado correctamente.")
     
-    def agregar_miembro(self, nombre,id_miembro):
-        query = 'INSERT INTO miembros VALUES ( ?, ?, 1 )'
-        parametros = (nombre, id_miembro,)
-        self.run_query(query, parametros)
 
     def mostrar_miembros(self):
         return "\n".join(str(miembro) for miembro in self.miembros) if self.miembros else "No hay miembros registrados."
@@ -387,64 +373,68 @@ def abrir_agregar_miembro():
     entry_id_miembro = tk.Entry(ventana_miembro)
     entry_id_miembro.grid(row=1, column=1)
 
-    tk.Label(ventana_miembro, text="Fecha de Vencimiento (YYYY-MM-DD):").grid(row=2, column=0)
-    entry_fecha = tk.Entry(ventana_miembro)
-    entry_fecha.grid(row=2, column=1)
+    tk.Label(ventana_miembro, text="Meses de Membresía:").grid(row=2, column=0)
+    entry_meses = tk.Entry(ventana_miembro)
+    entry_meses.grid(row=2, column=1)
 
    
     def agregar_miembro():
         nombre = entry_nombre.get()
-        id_miembro = entry_id_miembro.get()
+        id_miembro = entry_id_miembro.get()  
+        meses = entry_meses.get()
 
-        if nombre and id_miembro:
-            if agregar_miembro(nombre, id_miembro):
-                messagebox.showinfo("Éxito", f"Mientro '{nombre}' agregado correctamente.")
-            else:
-                messagebox.showerror("Error", "Todos los campos son obligatorios.")
+        if not (nombre and id_miembro and meses):  
+            messagebox.showwarning("Error", "Todos los campos son obligatorios.")
+            return  
+
+        try:
+            miembro = Miembro(nombre, id_miembro, 0)
+            resultado = miembro.pedir_membresia(nombre, id_miembro, meses)
+            messagebox.showinfo("Éxito", f"Miembro '{nombre}' agregado correctamente.\n{resultado}")
             ventana_miembro.destroy()
-        else:
-            messagebox.showwarning("Error", "Todos los campos son obligatorios.")         
+        
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un problema: {e}")        
              
-
-    def agregar_membresia():
-        id_miembro = entry_id_miembro.get()
-        fecha_vencimiento = entry_fecha.get()
-
-        if not id_miembro or not fecha_vencimiento:
-            messagebox.showerror("Error", "ID y Fecha de Vencimiento son obligatorios")
-            return
-
-        agregar_membresia(id_miembro, fecha_vencimiento)
-        messagebox.showinfo("Éxito", "Membresía agregada correctamente.")
         
     
     def renovar_membresia():
         id_miembro = entry_id_miembro.get()
-        fecha_vencimiento = entry_fecha.get()
+        meses = entry_meses.get()
 
-        if not id_miembro or not fecha_vencimiento:
-            messagebox.showerror("Error", "ID y Fecha de Vencimiento son obligatorios")
+        if not id_miembro or not meses.isdigit():
+            messagebox.showerror("Error", "ID y Meses de Renovación son obligatorios.")
             return
 
-        messagebox.showinfo("Éxito", "Membresía renovada correctamente.")
+        try:
+            resultado = Miembro.renovar_membresia(id_miembro, int(meses))
+            messagebox.showinfo("Éxito", resultado)
+            ventana_miembro.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un problema: {e}")
         
 
     
-    def eliminar_membresia():
+    def eliminar_miembro():
         id_miembro = entry_id_miembro.get()
 
         if not id_miembro:
-            messagebox.showerror("Error", "ID del miembro es obligatorio")
+            messagebox.showerror("Error", "Debe ingresar un ID de miembro para eliminarlo.")
             return
-
-        messagebox.showinfo("Eliminado", "Membresía eliminada correctamente.")
         
+        confirmacion = messagebox.askyesno("Confirmar Eliminación", f"¿Seguro que desea eliminar el miembro con ID {id_miembro}?")
+        if confirmacion:
+            try:
+                resultado = Miembro.eliminar_miembro(id_miembro)
+                if resultado:
+                    messagebox.showinfo("Éxito", f"Miembro con ID {id_miembro} eliminado correctamente.")
+                ventana_miembro.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", f"Ocurrio un problema: {e}")
 
-
-    
-    tk.Button(ventana_miembro, text="Agregar", command=agregar_membresia).grid(row=3, column=0, pady=10)
-    tk.Button(ventana_miembro, text="Renovar", command=renovar_membresia).grid(row=3, column=1, pady=10)
-    tk.Button(ventana_miembro, text="Eliminar", command=eliminar_membresia).grid(row=3, column=2, pady=10)
+    tk.Button(ventana_miembro, text="Agregar Miembro", command=agregar_miembro).grid(row=3, column=0, pady=10)
+    tk.Button(ventana_miembro, text="Renovar Membresía", command=renovar_membresia).grid(row=3, column=1, pady=10)
+    tk.Button(ventana_miembro, text="Eliminar Miembro", command=eliminar_miembro, fg="white", bg="red").grid(row=3, column=2, pady=10)
 
 
     
