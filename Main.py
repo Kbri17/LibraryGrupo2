@@ -3,8 +3,6 @@ from tkinter import Image, messagebox
 import sqlite3
 from tkinter import ttk
 from PIL import Image, ImageTk
-from PIL import Image, ImageTk
-
 
 class Libro:
     db_name = 'database.db'
@@ -76,17 +74,17 @@ class Libro:
 
         return f"El libro con ID {bookID} ha sido devuelto por {nombre_miembro}."
 
-class Miembro:
-    def __init__(self, nombre, id_miembro):
+class Usuario:
+    def __init__(self, nombre):
         self.nombre = nombre
-        self.id_miembro = id_miembro
 
     def __str__(self):
-        return f"Miembro: {self.nombre}, ID: {self.id_miembro}"
+        return f"Miembro: {self.nombre}"
     
-class Usuario(Miembro):
+class Miembro(Usuario):
     def __init__(self, nombre, id_miembro, tiempo_membresia):
-        super().__init__(nombre, id_miembro)
+        super().__init__(nombre)
+        self.id_miembro = id_miembro
         self.tiempo_membresia = tiempo_membresia
         
     def pedir_membresia(self, meses):
@@ -104,6 +102,18 @@ class Usuario(Miembro):
             conn.commit()
             
         return f'{self.nombre} ha obtenido una membresía por {meses} meses.'
+    
+class MiembroProfesor(Miembro):
+    def __init__(self, nombre, id_miembro, tiempo_membresia, descuento):
+        super().__init__(nombre, id_miembro, tiempo_membresia)
+        self.descuento = descuento
+
+    def activateDescuento(bool):
+        if bool:
+            return True
+        else:
+            return False
+    
 
 
     def renovar_membresia(self, meses):
