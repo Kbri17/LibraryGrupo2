@@ -86,6 +86,14 @@ class Miembro(Usuario):
         super().__init__(nombre)
         self.id_miembro = id_miembro
         self.tiempo_membresia = tiempo_membresia
+
+    db_name = 'database.db'
+    def run_query(self, query, parametros=()):
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                resultado = cursor.execute(query, parametros)
+                conn.commit()
+            return resultado
         
     def pedir_membresia(self, nombre, id_miembro, meses):
         query = 'INSERT INTO miembros (nombre,id_miembro, tiempo_membresia)VALUES ( ?, ?, ? )'
@@ -103,11 +111,7 @@ class Miembro(Usuario):
         
         query = "UPDATE miembros SET tiempo_membresia = ? WHERE id_miembro = ?"
         parametros = (self.tiempo_membresia, self.id_miembro)
-
-        with sqlite3.connect('database.db') as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, parametros)
-            conn.commit()
+        self.run_query(query, parametros)
 
         return f'La membresía de {self.nombre} ha sido renovada por {meses} meses.'
     
@@ -117,11 +121,8 @@ class Miembro(Usuario):
         
         query = "UPDATE miembros SET tiempo_membresia = 0 WHERE id_miembro = ?"
         parametros = (self.id_miembro,)
-        
-        with sqlite3.connect('database.db')as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, parametros)
-            conn.commit()
+        self.run_query(query, parametros)
+
         return f'La membresía de {self.nombre} ha sido eliminada.'
     
 class MiembroProfesor(Miembro):
@@ -388,7 +389,7 @@ def abrir_agregar_miembro():
             return  
 
         try:
-            miembro = Miembro(nombre, id_miembro, 0)
+            miembro = Miembro(nombre, id_miembro, meses)
             resultado = miembro.pedir_membresia(nombre, id_miembro, meses)
             messagebox.showinfo("Éxito", f"Miembro '{nombre}' agregado correctamente.\n{resultado}")
             ventana_miembro.destroy()
@@ -407,7 +408,8 @@ def abrir_agregar_miembro():
             return
 
         try:
-            resultado = Miembro.renovar_membresia(id_miembro, int(meses))
+            miembro = Miembro("", id_miembro, 0)
+            resultado = miembro.renovar_membresia(id_miembro, int(meses))
             messagebox.showinfo("Éxito", resultado)
             ventana_miembro.destroy()
         except Exception as e:
@@ -425,7 +427,8 @@ def abrir_agregar_miembro():
         confirmacion = messagebox.askyesno("Confirmar Eliminación", f"¿Seguro que desea eliminar el miembro con ID {id_miembro}?")
         if confirmacion:
             try:
-                resultado = Miembro.eliminar_miembro(id_miembro)
+                miembro = Miembro("", id_miembro, 0)
+                resultado = miembro.eliminar_miembro(id_miembro)
                 if resultado:
                     messagebox.showinfo("Éxito", f"Miembro con ID {id_miembro} eliminado correctamente.")
                 ventana_miembro.destroy()
