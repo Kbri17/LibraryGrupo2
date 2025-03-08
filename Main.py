@@ -3,76 +3,98 @@ from tkinter import Image, messagebox
 import sqlite3
 from tkinter import ttk
 from PIL import Image, ImageTk
+from datetime import datetime
 
 class Libro:
     db_name = 'database.db'
+
     def __init__(self, titulo, autor, bookID):
         self.titulo = titulo
         self.autor = autor
         self.bookID = bookID
-        self.estado = "Disponible"
-        self.prestado_a = None
-        
+        self.disponible = True
 
     def run_query(self, query, parametros=()):
-            with sqlite3.connect(self.db_name) as conn:
-                cursor = conn.cursor()
-                resultado = cursor.execute(query, parametros)
-                conn.commit()
-            return resultado
-    
-    def prestarse(self, bookID ,miembro_id):
-       
-        query0="SELECT estado FROM libros WHERE bookID = ?" 
-        parametros1 =(bookID,)
-        estadoLibro= self.run_query(query0,parametros1).fetchone()
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            resultado = cursor.execute(query, parametros)
+            conn.commit()
+        return resultado
 
-        if not estadoLibro:  
-         return f"Error: No se encontró un libro con el ID {bookID}."
+    def prestar(self):
+        if self.disponible:
+            self.disponible = False
+            return True
+        return False
 
-        estado= estadoLibro[0]
+    def devolver(self, fecha_devolucion, fecha_limite):
+        self.disponible = True
+        if fecha_devolucion <= fecha_limite:
+            return "Libro devuelto a tiempo. Se aplica un descuento del 15%."
+        return "Libro devuelto fuera de tiempo."
+
+    def prestarse(self, bookID, miembro_id):
+        query0 = "SELECT estado FROM libros WHERE bookID = ?"
+        parametros1 = (bookID,)
+        estadoLibro = self.run_query(query0, parametros1).fetchone()
+
+        if not estadoLibro:
+            return f"Error: No se encontró un libro con el ID {bookID}."
+
+        estado = estadoLibro[0]
 
         if estado == "Prestado":
             return f"El libro ya está prestado"
-        
+
         query2 = "SELECT nombre FROM miembros WHERE id_miembro = ?"
-        parametros2= (miembro_id,)  
+        parametros2 = (miembro_id,)
         nombreMiembro = self.run_query(query2, parametros2).fetchone()
-      
+
         if not nombreMiembro:
             return f"Error: No se encontró un miembro con el ID {miembro_id}."
 
-
         query3 = "UPDATE libros SET estado = ?, prestado_a = ? WHERE bookID = ?"
-        parametros3= ("Prestado", nombreMiembro[0],bookID,)
+        parametros3 = ("Prestado", nombreMiembro[0], bookID,)
         self.run_query(query3, parametros3)
-
 
         return f"El libro ha sido prestado a {nombreMiembro[0]}."
 
-     
-    def devolverse(self, bookID ,miembro_id):
-
-        queryS="SELECT prestado_a FROM libros WHERE BookID = ?"
+    def devolverse(self, bookID, miembro_id, fecha_devolucion_str):
+        queryS = "SELECT prestado_a FROM libros WHERE BookID = ?"
         parametrosS = (bookID,)
-        estadoPrestado= self.run_query(queryS,parametrosS).fetchone()
+        estadoPrestado = self.run_query(queryS, parametrosS).fetchone()
 
         if not estadoPrestado or estadoPrestado[0] is None:
             return f"El libro no está prestado."
-            
-        queryN= "SELECT nombre FROM miembros WHERE id_miembro = ?"
+
+        queryN = "SELECT nombre FROM miembros WHERE id_miembro = ?"
         parametrosN = (miembro_id,)
         nombreN = self.run_query(queryN, parametrosN).fetchone()
-        nombre_miembro = nombreN[0]
-        
-        if not nombre_miembro:
+
+        if not nombreN:
             return f"Error: No se encontró un miembro con el ID {miembro_id}."
-        
-        queryP="UPDATE libros SET estado = ? WHERE BookID = ?"
-        parametrosQ=("Disponible",bookID,)
+
+        nombre_miembro = nombreN[0]
+
+        fecha_devolucion = datetime.strptime(fecha_devolucion_str, "%Y-%m-%d")
+        fecha_limite = datetime.strptime(
+            "2025-03-07", "%Y-%m-%d")  # Esta parte será la simulación de fecha límite
+
+        resultado = self.devolver(fecha_devolucion, fecha_limite)
+
+        if "a tiempo" in resultado:
+            queryD = "UPDATE miembros SET descuento = 15 WHERE id_miembro = ?"
+            parametrosD = (miembro_id,)
+            self.run_query(queryD, parametrosD)
+            resultado += " Se ha aplicado un descuento del 15% para la próxima vez."
+
+        queryP = "UPDATE libros SET estado = ? WHERE BookID = ?"
+        parametrosQ = ("Disponible", bookID,)
         self.run_query(queryP, parametrosQ)
 
-        return f"El libro con ID {bookID} ha sido devuelto por {nombre_miembro}."
+        return f"{resultado} El libro con ID {bookID} ha sido devuelto por {nombre_miembro}."
+
+
 
 class Usuario:
     def __init__(self, nombre):
@@ -302,28 +324,36 @@ def abrir_devolucion():
     ventana_devolucion.title("Devolver Libro")
 
     tk.Label(ventana_devolucion, text="BookID del Libro:").grid(row=0, column=0)
-    entry_BookID_devolucion = tk.Entry(ventana_devolucion)
-    entry_BookID_devolucion.grid(row=0, column=1)
-    
-    tk.Label(ventana_devolucion, text="Nombre del Miembro:").grid(row=1, column=0)
-    entry_BookID_devolucion = tk.Entry(ventana_devolucion)
-    entry_BookID_devolucion.grid(row=1, column=1)
+    entry_BookID = tk.Entry(ventana_devolucion)
+    entry_BookID.grid(row=0, column=1)
+
+    tk.Label(ventana_devolucion, text="ID del Miembro:").grid(row=1, column=0)
+    entry_miembro_id = tk.Entry(ventana_devolucion)
+    entry_miembro_id.grid(row=1, column=1)
+
+    tk.Label(ventana_devolucion, text="Fecha de Devolución (YYYY-MM-DD):").grid(row=2, column=0)
+    entry_fecha_devolucion = tk.Entry(ventana_devolucion)
+    entry_fecha_devolucion.grid(row=2, column=1)
 
     def devolver_libro():
-        BookID = entry_BookID_devolucion.get()
-        miembro_id = entry_BookID_devolucion.get()
-        
-        if not BookID or not miembro_id:
+        BookID = entry_BookID.get()
+        miembro_id = entry_miembro_id.get()
+        fecha_devolucion = entry_fecha_devolucion.get()
+
+        if not BookID or not miembro_id or not fecha_devolucion:
             messagebox.showwarning("Error", "Todos los campos son obligatorios.")
             return
 
-        libro = Libro( "", "",BookID)
-        resultado = libro.devolverse(BookID, miembro_id)
+        libro = Libro("", "", BookID)
+        resultado = libro.devolverse(BookID, miembro_id, fecha_devolucion)
         messagebox.showinfo("Resultado", resultado)
-        ventana_devolucion.destroy() 
+        ventana_devolucion.destroy()
 
-    tk.Button(ventana_devolucion, text="Devolver", command=devolver_libro).grid(row=2, column=0, columnspan=2, pady=10)
+    tk.Button(ventana_devolucion, text="Devolver", command=devolver_libro).grid(
+        row=3, column=0, columnspan=2, pady=10)
 
+root = tk.Tk()
+root.withdraw() 
 
 def mostrar_catalogo():
 
