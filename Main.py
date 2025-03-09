@@ -96,18 +96,18 @@ class Libro:
         return f"{resultado} El libro con ID {bookID} ha sido devuelto por {nombre_miembro}."
 
 
-class Miembro:
-    def __init__(self, nombre, id_miembro):
+class Usuario:
+    def __init__(self, nombre):
         self.nombre = nombre
-        self.id_miembro = id_miembro
 
     def __str__(self):
-        return f"Miembro: {self.nombre}, ID: {self.id_miembro}"
+        return f"Usuario: {self.nombre}"
 
 
-class Usuario(Miembro):
+class Miembro(Usuario):
     def __init__(self, nombre, id_miembro, tiempo_membresia):
-        super().__init__(nombre, id_miembro)
+        super().__init__(nombre)
+        self.id_miembro = id_miembro
         self.tiempo_membresia = tiempo_membresia
 
     def pedir_membresia(self, meses):
