@@ -306,13 +306,13 @@ def abrir_devolucion():
     entry_BookID_devolucion = tk.Entry(ventana_devolucion)
     entry_BookID_devolucion.grid(row=0, column=1)
     
-    tk.Label(ventana_devolucion, text="Nombre del Miembro:").grid(row=1, column=0)
-    entry_BookID_devolucion = tk.Entry(ventana_devolucion)
-    entry_BookID_devolucion.grid(row=1, column=1)
+    tk.Label(ventana_devolucion, text="ID del Miembro: ").grid(row=1, column=0)
+    entry_ID_devolucion = tk.Entry(ventana_devolucion)
+    entry_ID_devolucion.grid(row=1, column=1)
 
     def devolver_libro():
         BookID = entry_BookID_devolucion.get()
-        miembro_id = entry_BookID_devolucion.get()
+        miembro_id = entry_ID_devolucion.get()
         
         if not BookID or not miembro_id:
             messagebox.showwarning("Error", "Todos los campos son obligatorios.")
